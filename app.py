@@ -635,11 +635,6 @@ st.markdown(f"""
         opacity: 0.3 !important;
     }}
 
-    /* sidebar 收合按鈕樣式 */
-    [data-testid="stSidebarCollapseButton"] {{
-        background: linear-gradient(90deg, #667eea, #764ba2) !important;
-        border-radius: 10px !important;
-    }}
 
     [data-testid="stSidebarCollapseButton"] svg {{
         fill: white !important;
@@ -671,14 +666,6 @@ st.markdown(f"""
 
     header [data-testid="stToolbar"] button svg + span {{
         display: none !important;
-    }}
-
-    /* 只隱藏 icon 旁邊的文字，保留圖示 */
-    .material-symbols-rounded {{
-        font-size: 1.5rem !important;
-        width: 1.5rem !important;
-        height: 1.5rem !important;
-        overflow: hidden !important;
     }}
 
     /* 隱藏 header 按鈕文字但保留功能 */
@@ -727,6 +714,32 @@ st.markdown(f"""
 
     [data-testid="stDownloadButton"] > button p,
     [data-testid="stDownloadButton"] > button span {{
+        color: white !important;
+    }}
+
+    details summary svg {{
+        display: inline-block !important;
+        visibility: visible !important;
+        width: 1.2rem !important;
+        height: 1.2rem !important;
+        font-size: 1.2rem !important;
+    }}
+    
+    /* 統一隱藏所有 Material Icon 文字 */
+    .material-symbols-rounded {{
+        font-size: 0 !important;
+        width: 20px !important;
+        height: 20px !important;
+        overflow: hidden !important;
+        display: inline-block !important;
+        vertical-align: middle !important;
+    }}
+
+    /* sidebar 收合按鈕例外，恢復顯示 */
+    [data-testid="stSidebarCollapseButton"] .material-symbols-rounded {{
+        font-size: 1.5rem !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
         color: white !important;
     }}
 
@@ -836,6 +849,8 @@ target_toeic = st.sidebar.slider(
 )
 
 st.session_state.target_toeic = target_toeic
+
+st.sidebar.divider()
 
 # 切換到 AI 對話模式
 st.sidebar.subheader("💬 AI 對話助教")
