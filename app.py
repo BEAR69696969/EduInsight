@@ -323,6 +323,12 @@ st.markdown(f"""
         opacity: 1 !important;
     }}
 
+    /* 隱藏按鈕內的文字但保留圖示 */
+    [data-testid="stSidebarCollapseButton"] span,
+    section[data-testid="stSidebarCollapsedControl"] span {{
+        display: none !important;
+    }}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -394,9 +400,31 @@ if st.sidebar.button("💬 開啟 AI 對話"):
     st.session_state.chat_mode = not st.session_state.chat_mode
     st.rerun()
 
+# 手機版 sidebar 提示
+st.markdown(f"""
+<div style="
+    background: {card_bg};
+    border-radius: 15px;
+    padding: 12px 20px;
+    margin-bottom: 15px;
+    box-shadow: {card_shadow};
+    display: flex;
+    align-items: center;
+    gap: 10px;
+">
+    <span style="font-size: 1.2rem;">☰</span>
+    <p style="
+        color: {text_color} !important;
+        margin: 0;
+        font-size: 0.9rem;
+    ">點擊左上角 <b>☰</b> 開啟選單，可登入帳號與切換模式</p>
+</div>
+""", unsafe_allow_html=True)
+
 # 模式選擇
 analysis_ready = False
 mode = st.radio(
+    
     "選擇輸入方式",
     ["手動輸入", "CSV 上傳"]
 )
