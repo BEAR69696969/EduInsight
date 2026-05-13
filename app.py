@@ -856,6 +856,10 @@ if st.sidebar.button("📝 開始練習題"):
     st.session_state.quiz_mode = not st.session_state.quiz_mode
     st.rerun()
 
+if st.sidebar.button("❌ 複習錯題"):
+    st.session_state.wrong_mode = not st.session_state.get("wrong_mode", False)
+    st.rerun()
+
 st.sidebar.divider()
 
 st.sidebar.subheader("📄 學習報告")
@@ -1667,6 +1671,27 @@ if st.session_state.quiz_mode:
                 else:
                     st.error(f"❌ 答錯了！正確答案是 {current_q['answer']}")
 
+                    # 儲存錯題
+                    if username:
+                        wrong_file = f"users/{username}/wrong_questions.csv"
+                        wrong_data = pd.DataFrame([{
+                            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "type": quiz_type,
+                            "question": current_q["question"],
+                            "correct_answer": current_q["answer"],
+                            "user_answer": selected_letter,
+                            "explanation": current_q["explanation"]
+                        }])
+
+                        os.makedirs(f"users/{username}", exist_ok=True)
+
+                        if os.path.exists(wrong_file):
+                            old = pd.read_csv(wrong_file)
+                            new = pd.concat([old, wrong_data], ignore_index=True)
+                            new.to_csv(wrong_file, index=False)
+                        else:
+                            wrong_data.to_csv(wrong_file, index=False)
+
                 st.info(f"📖 解析：{current_q['explanation']}")
 
         else:
@@ -1759,6 +1784,115 @@ if st.session_state.quiz_mode:
         with col2:
             if st.button("📊 查看分析", key="go_analysis"):
                 st.session_state.quiz_mode = False
+                st.rerun()
+
+# 錯題複習功能
+if st.session_state.get("wrong_mode", False):
+
+    st.markdown(f"""
+    <div style="
+        background: {card_bg};
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: {card_shadow};
+        margin-top: 30px;
+        border-left: 5px solid #ff6b6b;
+    ">
+        <h3 style="color: #ff6b6b !important; font-weight: 700;">
+            ❌ 錯題複習
+        </h3>
+        <p style="color: {text_color} !important; font-size: 0.9rem;">
+            複習您之前做錯的題目，加強弱點！
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+
+    if not username:
+        st.warning("⚠️ 請先登入使用者名稱才能查看錯題紀錄！")
+
+    else:
+        wrong_file = f"users/{username}/wrong_questions.csv"
+
+        if not os.path.exists(wrong_file):
+            st.info("🎉 目前沒有錯題紀錄，繼續保持！")
+
+        else:
+            wrong_data = pd.read_csv(wrong_file)
+
+            # 統計
+            total_wrong = len(wrong_data)
+            reading_wrong = len(wrong_data[wrong_data["type"] == "Reading"])
+            vocab_wrong = len(wrong_data[wrong_data["type"] == "Vocabulary"])
+            grammar_wrong = len(wrong_data[wrong_data["type"] == "Grammar"])
+
+            # 統計卡片
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                st.metric("總錯題數", f"{total_wrong} 題")
+            with col2:
+                st.metric("Reading 錯題", f"{reading_wrong} 題")
+            with col3:
+                st.metric("Vocabulary 錯題", f"{vocab_wrong} 題")
+            with col4:
+                st.metric("Grammar 錯題", f"{grammar_wrong} 題")
+
+            st.divider()
+
+            # 篩選題型
+            filter_type = st.selectbox(
+                "篩選題型",
+                ["全部", "Reading", "Vocabulary", "Grammar"],
+                key="wrong_filter"
+            )
+
+            if filter_type != "全部":
+                filtered = wrong_data[wrong_data["type"] == filter_type]
+            else:
+                filtered = wrong_data
+
+            # 顯示錯題
+            st.subheader(f"📋 錯題列表（{len(filtered)} 題）")
+
+            for i, row in filtered.iterrows():
+
+                with st.expander(
+                    f"❌ [{row['type']}] {row['question'][:50]}...",
+                    expanded=False
+                ):
+                    st.markdown(f"""
+                    <div style="
+                        background: {card_bg};
+                        border-radius: 10px;
+                        padding: 15px;
+                        box-shadow: {card_shadow};
+                    ">
+                        <p style="color: {text_color} !important; white-space: pre-line;">
+                            {row['question']}
+                        </p>
+                        <p style="color: #ff6b6b !important;">
+                            ❌ 您的答案：{row['user_answer']}
+                        </p>
+                        <p style="color: #51cf66 !important;">
+                            ✅ 正確答案：{row['correct_answer']}
+                        </p>
+                        <p style="color: {text_color} !important;">
+                            📖 解析：{row['explanation']}
+                        </p>
+                        <p style="color: rgba(150,150,150,0.8) !important; font-size: 0.8rem;">
+                            🕐 錯誤時間：{row['time']}
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            st.divider()
+
+            # 清除錯題按鈕
+            if st.button("🗑️ 清除所有錯題紀錄", key="clear_wrong"):
+                os.remove(wrong_file)
+                st.success("✅ 錯題紀錄已清除！")
                 st.rerun()
 
 # PDF 匯出功能
