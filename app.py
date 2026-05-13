@@ -590,39 +590,15 @@ st.markdown(f"""
         opacity: 0.3 !important;
     }}
     
-    /* sidebar 收合後的按鈕 */
-    section[data-testid="stSidebarCollapsedControl"] {{
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+    /* 隱藏 Streamlit 預設 header */
+    header[data-testid="stHeader"] {{
+        display: none !important;
     }}
 
-    section[data-testid="stSidebarCollapsedControl"] button {{
-        background: linear-gradient(90deg, #667eea, #764ba2) !important;background: 
-        border-radius: 10px !important;
-        width: 45px !important;
-        height: 45px !important;
-        border: none !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }}
-
-    section[data-testid="stSidebarCollapsedControl"] button * {{
-        color: white !important;
-        fill: white !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-    }}
-
-    section[data-testid="stSidebarCollapsedControl"] span[data-testid] {{
-        display: block !important;
-        color: white !important;
-        font-size: 1.5rem !important;
-        opacity: 1 !important;
-    }}
-
-    section[data-testid="stSidebarCollapsedControl"] span:not([data-testid]) {{
+    /* 隱藏所有 sidebar 收合相關按鈕 */
+    [data-testid="stSidebarCollapseButton"],
+    section[data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] {{
         display: none !important;
     }}
 
@@ -793,7 +769,7 @@ if st.sidebar.button("📄 匯出 PDF 報告"):
 # 手機版 sidebar 提示
 st.markdown(f"""
 <div style="
-    background: {card_bg};
+    background: linear-gradient(90deg, #667eea, #764ba2);
     border-radius: 15px;
     padding: 12px 20px;
     margin-bottom: 15px;
@@ -801,13 +777,15 @@ st.markdown(f"""
     display: flex;
     align-items: center;
     gap: 10px;
+    cursor: pointer;
 ">
-    <span style="font-size: 1.2rem;">☰</span>
+    <span style="font-size: 1.5rem;">☰</span>
     <p style="
-        color: {text_color} !important;
+        color: white !important;
         margin: 0;
         font-size: 0.9rem;
-    ">點擊左上角 <b>☰</b> 開啟選單，可登入帳號與切換模式</p>
+        font-weight: 600;
+    ">點擊這裡或左側邊欄開啟選單</p>
 </div>
 """, unsafe_allow_html=True)
 
