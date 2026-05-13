@@ -250,6 +250,37 @@ st.markdown(f"""
         display: none !important;
     }}
 
+    /* 隱藏所有 icon 文字 */
+    [data-testid="collapsedControl"] {{
+        display: none !important;
+    }}
+
+    button[data-testid="baseButton-headerNoPadding"] {{
+        display: none !important;
+    }}
+
+    /* 手機版 sidebar 按鈕 */
+    .st-emotion-cache-1dp5vir {{
+        display: none !important;
+    }}
+
+    header [data-testid="stToolbar"] button svg + span {{
+        display: none !important;
+    }}
+
+    /* 只隱藏 icon 旁邊的文字，保留圖示 */
+    .material-symbols-rounded {{
+        font-size: 1.5rem !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+        overflow: hidden !important;
+    }}
+
+    /* 隱藏 header 按鈕文字但保留功能 */
+    header button span:not([data-testid]) {{
+        display: none !important;
+    }}
+
     /* 隱藏 chat_message icon 文字 */
     [data-testid="chatAvatarIcon-user"],
     [data-testid="chatAvatarIcon-assistant"] {{
