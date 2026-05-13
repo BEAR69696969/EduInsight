@@ -237,9 +237,29 @@ st.markdown(f"""
         opacity: 0.3 !important;
     }}
     
-    /* 隱藏 sidebar 收合按鈕文字 */
+    /* sidebar 收合按鈕樣式 */
     [data-testid="stSidebarCollapseButton"] {{
-        display: none !important;
+        background: linear-gradient(90deg, #667eea, #764ba2) !important;
+        border-radius: 10px !important;
+        width: 40px !important;
+        height: 40px !important;
+    }}
+
+    [data-testid="stSidebarCollapseButton"] svg {{
+        fill: white !important;
+        color: white !important;
+    }}
+
+    section[data-testid="stSidebarCollapsedControl"] button {{
+        background: linear-gradient(90deg, #667eea, #764ba2) !important;
+        border-radius: 10px !important;
+        width: 40px !important;
+        height: 40px !important;
+    }}
+
+    section[data-testid="stSidebarCollapsedControl"] svg {{
+        fill: white !important;
+        color: white !important;
     }}
 
     section[data-testid="stSidebarCollapsedControl"] {{
