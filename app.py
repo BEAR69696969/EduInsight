@@ -740,6 +740,23 @@ if st.sidebar.button(dark_label):
 
 st.sidebar.divider()
 
+st.sidebar.divider()
+st.sidebar.subheader("🎯 學習目標")
+
+if "target_toeic" not in st.session_state:
+    st.session_state.target_toeic = 600
+
+target_toeic = st.sidebar.slider(
+    "設定目標 TOEIC 分數",
+    min_value=300,
+    max_value=990,
+    value=st.session_state.target_toeic,
+    step=10,
+    key="target_slider"
+)
+
+st.session_state.target_toeic = target_toeic
+
 # 切換到 AI 對話模式
 st.sidebar.subheader("💬 AI 對話助教")
 
@@ -1079,6 +1096,87 @@ if analysis_ready:
             label="AI 預測 TOEIC 分數",
             value=f"{int(predicted_toeic)} 分"
         )
+
+        st.divider()
+        
+        # 學習目標進度
+        st.subheader("🎯 學習目標進度")
+
+        target = st.session_state.target_toeic
+        current = int(predicted_toeic)
+        gap = target - current
+
+        # 進度百分比
+        progress_pct = min(current / target, 1.0)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric(
+                "🎯 目標分數",
+                f"{target} 分"
+            )
+
+        with col2:
+            if gap > 0:
+                st.metric(
+                    "📏 距離目標",
+                    f"{gap} 分",
+                    delta=f"-{gap} 分",
+                    delta_color="inverse"
+                )
+            else:
+                st.metric(
+                    "📏 距離目標",
+                    "已達標 🎉",
+                    delta="達標！",
+                )
+
+        # 進度條
+        st.markdown(f"""
+        <div style="margin: 10px 0;">
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 5px;
+            ">
+                <span style="color: {text_color} !important; font-size: 0.9rem;">
+                    目前進度
+                </span>
+                <span style="color: #667eea !important; font-weight: 700;">
+                    {int(progress_pct * 100)}%
+                </span>
+            </div>
+            <div style="
+                background: rgba(102, 126, 234, 0.2);
+                border-radius: 10px;
+                height: 12px;
+                overflow: hidden;
+            ">
+                <div style="
+                    background: linear-gradient(90deg, #667eea, #764ba2);
+                    width: {int(progress_pct * 100)}%;
+                    height: 100%;
+                    border-radius: 10px;
+                    transition: width 0.5s ease;
+                "></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # AI 預估達標時間
+        st.subheader("⏱️ AI 預估達標時間")
+
+        if gap <= 0:
+            st.success("🎉 恭喜！您已經達到目標分數了！建議繼續保持或提高目標！")
+        elif gap <= 50:
+            st.warning(f"💪 距離目標只剩 {gap} 分！預估約 **2-4 週** 可達標！")
+        elif gap <= 150:
+            st.warning(f"📚 距離目標 {gap} 分，預估約 **1-3 個月** 可達標！")
+        elif gap <= 300:
+            st.info(f"🌱 距離目標 {gap} 分，預估約 **3-6 個月** 可達標！")
+        else:
+            st.info(f"🚀 距離目標 {gap} 分，預估約 **6 個月以上** 可達標，加油！")
 
         st.divider()
 
