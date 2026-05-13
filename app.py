@@ -12,6 +12,225 @@ import numpy as np
 import random
 from sklearn.linear_model import LinearRegression
 
+# PDF 產生函式
+def generate_pdf(username, reading_score, vocabulary_score, grammar_score, predicted_toeic):
+
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    from reportlab.lib.units import cm
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    import io
+
+    # 下載並註冊中文字體
+    import urllib.request
+
+    font_path = "NotoSansTC.ttf"
+
+    if not os.path.exists(font_path):
+        urllib.request.urlretrieve(
+            "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/TraditionalChinese/NotoSansCJKtc-Regular.otf",
+            font_path
+        )
+
+    try:
+        pdfmetrics.registerFont(TTFont("NotoSansTC", font_path))
+        chinese_font = "NotoSansTC"
+    except:
+        chinese_font = "Helvetica"
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=2*cm,
+        leftMargin=2*cm,
+        topMargin=2*cm,
+        bottomMargin=2*cm
+    )
+
+    elements = []
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        "title",
+        parent=styles["Title"],
+        fontSize=24,
+        textColor=colors.HexColor("#667eea"),
+        spaceAfter=10,
+        alignment=1,
+        fontName=chinese_font
+    )
+
+    subtitle_style = ParagraphStyle(
+        "subtitle",
+        parent=styles["Normal"],
+        fontSize=12,
+        textColor=colors.HexColor("#764ba2"),
+        spaceAfter=5,
+        alignment=1,
+        fontName=chinese_font
+    )
+
+    heading_style = ParagraphStyle(
+        "heading",
+        parent=styles["Heading2"],
+        fontSize=14,
+        textColor=colors.HexColor("#667eea"),
+        spaceBefore=15,
+        spaceAfter=8,
+        fontName=chinese_font
+    )
+
+    normal_style = ParagraphStyle(
+        "normal",
+        parent=styles["Normal"],
+        fontSize=11,
+        textColor=colors.HexColor("#1a1a2e"),
+        spaceAfter=5,
+        leading=18,
+        fontName=chinese_font
+    )
+
+    # 標題
+    elements.append(Paragraph("EduInsight", title_style))
+    elements.append(Paragraph("AI 英文學習分析報告", subtitle_style))
+    elements.append(Spacer(1, 0.3*cm))
+    elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor("#667eea")))
+    elements.append(Spacer(1, 0.5*cm))
+
+    # 基本資訊
+    elements.append(Paragraph("📋 基本資訊", heading_style))
+
+    info_data = [
+        ["使用者", username if username else "未登入"],
+        ["報告日期", datetime.now().strftime("%Y年%m月%d日 %H:%M")],
+        ["預測 TOEIC 分數", f"{int(predicted_toeic)} 分"]
+    ]
+
+    info_table = Table(info_data, colWidths=[4*cm, 12*cm])
+    info_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), chinese_font),
+        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#667eea")),
+        ("TEXTCOLOR", (0, 0), (0, -1), colors.white),
+        ("BACKGROUND", (1, 0), (1, -1), colors.HexColor("#f3e8ff")),
+        ("TEXTCOLOR", (1, 0), (1, -1), colors.HexColor("#1a1a2e")),
+        ("FONTSIZE", (0, 0), (-1, -1), 11),
+        ("ROWBACKGROUNDS", (1, 0), (1, -1), [colors.HexColor("#f3e8ff"), colors.HexColor("#ede8ff")]),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
+        ("PADDING", (0, 0), (-1, -1), 8),
+        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 0.5*cm))
+
+    # 能力分析
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
+    elements.append(Paragraph("📊 英文能力分析", heading_style))
+
+    score_data = [
+        ["能力項目", "分數", "程度評估", "建議"],
+        [
+            "Reading（閱讀）",
+            f"{int(reading_score * 100)}%",
+            "優秀" if reading_score >= 0.8 else "普通" if reading_score >= 0.5 else "待加強",
+            "持續保持" if reading_score >= 0.8 else "加強練習" if reading_score >= 0.5 else "需要加強"
+        ],
+        [
+            "Vocabulary（詞彙）",
+            f"{int(vocabulary_score * 100)}%",
+            "優秀" if vocabulary_score >= 0.8 else "普通" if vocabulary_score >= 0.5 else "待加強",
+            "持續保持" if vocabulary_score >= 0.8 else "加強練習" if vocabulary_score >= 0.5 else "需要加強"
+        ],
+        [
+            "Grammar（語法）",
+            f"{int(grammar_score * 100)}%",
+            "優秀" if grammar_score >= 0.8 else "普通" if grammar_score >= 0.5 else "待加強",
+            "持續保持" if grammar_score >= 0.8 else "加強練習" if grammar_score >= 0.5 else "需要加強"
+        ]
+    ]
+
+    score_table = Table(score_data, colWidths=[4*cm, 2.5*cm, 3*cm, 6.5*cm])
+    score_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), chinese_font),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#667eea")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#f3e8ff"), colors.HexColor("#ffffff")]),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
+        ("PADDING", (0, 0), (-1, -1), 8),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (0, 1), (0, -1), "LEFT"),
+    ]))
+    elements.append(score_table)
+    elements.append(Spacer(1, 0.5*cm))
+
+    # AI 學習建議
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
+    elements.append(Paragraph("🤖 AI 學習建議", heading_style))
+
+    if reading_score < 0.5:
+        elements.append(Paragraph("📖 Reading 建議：", normal_style))
+        elements.append(Paragraph("• 每天閱讀英文文章 15 分鐘", normal_style))
+        elements.append(Paragraph("• 練習 TOEIC Part 7 長篇閱讀", normal_style))
+        elements.append(Paragraph("• 訓練關鍵字定位能力", normal_style))
+    elif reading_score < 0.8:
+        elements.append(Paragraph("📖 Reading 建議：", normal_style))
+        elements.append(Paragraph("• 增加閱讀速度練習", normal_style))
+        elements.append(Paragraph("• 嘗試閱讀更長的文章", normal_style))
+
+    if vocabulary_score < 0.5:
+        elements.append(Paragraph("📚 Vocabulary 建議：", normal_style))
+        elements.append(Paragraph("• 每日背誦 20 個商業英文單字", normal_style))
+        elements.append(Paragraph("• 練習 TOEIC 同義字題型", normal_style))
+    elif vocabulary_score < 0.8:
+        elements.append(Paragraph("📚 Vocabulary 建議：", normal_style))
+        elements.append(Paragraph("• 持續累積多益核心單字", normal_style))
+
+    if grammar_score < 0.5:
+        elements.append(Paragraph("✏️ Grammar 建議：", normal_style))
+        elements.append(Paragraph("• 加強時態與被動語態練習", normal_style))
+        elements.append(Paragraph("• 練習介系詞與連接詞用法", normal_style))
+    elif grammar_score < 0.8:
+        elements.append(Paragraph("✏️ Grammar 建議：", normal_style))
+        elements.append(Paragraph("• 增加文法題練習量", normal_style))
+
+    elements.append(Spacer(1, 0.5*cm))
+
+    # TOEIC 預測
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
+    elements.append(Paragraph("🎯 TOEIC 預測結果", heading_style))
+
+    toeic_level = ""
+    if predicted_toeic >= 750:
+        toeic_level = "高分潛力 🌟 - 您的英文能力已達到優秀水準！"
+    elif predicted_toeic >= 550:
+        toeic_level = "持續進步中 📈 - 繼續努力，目標指日可待！"
+    else:
+        toeic_level = "需加強基礎 💪 - 建議加強各項基礎能力！"
+
+    elements.append(Paragraph(f"預測分數：{int(predicted_toeic)} 分", normal_style))
+    elements.append(Paragraph(f"AI 評估：{toeic_level}", normal_style))
+    elements.append(Spacer(1, 0.5*cm))
+
+    # 頁尾
+    elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor("#667eea")))
+    elements.append(Spacer(1, 0.3*cm))
+    elements.append(Paragraph(
+        "EduInsight AI English Learning Analysis Platform | Powered by Groq AI x Machine Learning",
+        ParagraphStyle("footer", parent=styles["Normal"], fontSize=9,
+                      textColor=colors.HexColor("#999999"), alignment=1,
+                      fontName=chinese_font)
+    ))
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
 # 題目資料庫
 QUESTIONS = {
     "Reading": [
@@ -169,6 +388,9 @@ QUESTIONS = {
 # 深色模式 session state
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
+
+if "export_pdf" not in st.session_state:
+    st.session_state.export_pdf = False
 
 # 深色模式配色
 if st.session_state.dark_mode:
@@ -567,6 +789,11 @@ if st.sidebar.button("📝 開始練習題"):
     st.rerun()
 
 st.sidebar.divider()
+
+st.sidebar.subheader("📄 學習報告")
+
+if st.sidebar.button("📄 匯出 PDF 報告"):
+    st.session_state.export_pdf = True
 
 # 手機版 sidebar 提示
 st.markdown(f"""
@@ -1333,6 +1560,45 @@ if st.session_state.quiz_mode:
             if st.button("📊 查看分析", key="go_analysis"):
                 st.session_state.quiz_mode = False
                 st.rerun()
+
+# PDF 匯出功能
+if st.session_state.get("export_pdf") and analysis_ready:
+
+    st.markdown(f"""
+    <div style="
+        background: {card_bg};
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: {card_shadow};
+        margin-top: 30px;
+    ">
+        <h3 style="color: #667eea !important; font-weight: 700;">
+            📄 匯出學習報告
+        </h3>
+        <p style="color: {text_color} !important; font-size: 0.9rem;">
+            點擊下方按鈕下載您的個人學習分析 PDF 報告！
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.spinner("正在產生 PDF 報告..."):
+        pdf_buffer = generate_pdf(
+            username,
+            reading_score,
+            vocabulary_score,
+            grammar_score,
+            predicted_toeic
+        )
+
+    st.download_button(
+        label="📥 下載 PDF 報告",
+        data=pdf_buffer,
+        file_name=f"EduInsight_{username}_{datetime.now().strftime('%Y%m%d')}.pdf",
+        mime="application/pdf",
+        key="download_pdf"
+    )
+
+    st.session_state.export_pdf = False
 
 # AI 對話功能
 if st.session_state.chat_mode:
