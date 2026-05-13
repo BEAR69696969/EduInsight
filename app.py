@@ -9,7 +9,162 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
+import random
 from sklearn.linear_model import LinearRegression
+
+# 題目資料庫
+QUESTIONS = {
+    "Reading": [
+        {
+            "question": "Read the following passage and answer the question.\n\n'The company announced that it would expand its operations to three new countries next year. The CEO stated that this expansion would create over 500 new jobs.'\n\nWhat did the CEO say about the expansion?",
+            "options": ["A. It would reduce the number of employees", "B. It would create more than 500 jobs", "C. It would close some existing offices", "D. It would happen in five years"],
+            "answer": "B",
+            "explanation": "文章中提到 CEO 說擴張將創造超過 500 個新工作機會（create over 500 new jobs）。"
+        },
+        {
+            "question": "Read the notice below.\n\n'The office will be closed on Monday, December 25th for the holiday. Regular business hours will resume on Tuesday, December 26th.'\n\nWhen will the office reopen?",
+            "options": ["A. December 24th", "B. December 25th", "C. December 26th", "D. December 27th"],
+            "answer": "C",
+            "explanation": "通知中說 12 月 26 日（Tuesday, December 26th）恢復正常營業時間。"
+        },
+        {
+            "question": "Read the email subject line.\n\n'Reminder: Annual Performance Review Scheduled for Next Friday'\n\nWhat is the email about?",
+            "options": ["A. A job application", "B. A company picnic", "C. A yearly employee review", "D. A product launch"],
+            "answer": "C",
+            "explanation": "Annual Performance Review 指的是年度績效評估，即每年一次的員工考核。"
+        },
+        {
+            "question": "Read the advertisement.\n\n'Wanted: Experienced software engineer with at least 3 years of experience. Must be proficient in Python and Java. Competitive salary offered.'\n\nWhat is required for this position?",
+            "options": ["A. Experience in marketing", "B. Knowledge of Python and Java", "C. A degree in business", "D. Sales experience"],
+            "answer": "B",
+            "explanation": "廣告中要求應徵者必須精通 Python 和 Java（Must be proficient in Python and Java）。"
+        },
+        {
+            "question": "Read the memo.\n\n'All employees are required to complete the online safety training by March 31st. Failure to do so may result in restricted access to company systems.'\n\nWhat will happen if employees do not complete the training?",
+            "options": ["A. They will receive a bonus", "B. They will be promoted", "C. Their system access may be limited", "D. They will get extra vacation days"],
+            "answer": "C",
+            "explanation": "備忘錄中提到未完成訓練可能導致對公司系統的存取受限（restricted access to company systems）。"
+        },
+        {
+            "question": "Read the following passage.\n\n'Our store will be undergoing renovations from June 1st to June 15th. During this time, we will remain open but some sections may be temporarily unavailable.'\n\nWhat is true about the store during renovations?",
+            "options": ["A. It will be completely closed", "B. It will move to a new location", "C. It will still be open to customers", "D. It will offer special discounts"],
+            "answer": "C",
+            "explanation": "文章說明店舖在裝修期間仍會營業（we will remain open）。"
+        },
+        {
+            "question": "Read the letter.\n\n'Thank you for your order. Your package has been shipped and is expected to arrive within 3-5 business days. You can track your order using the tracking number provided.'\n\nHow can the customer monitor their delivery?",
+            "options": ["A. By calling the store", "B. By visiting the warehouse", "C. By using a tracking number", "D. By sending an email"],
+            "answer": "C",
+            "explanation": "信件中提到可以使用提供的追蹤號碼追蹤訂單（track your order using the tracking number provided）。"
+        },
+        {
+            "question": "Read the announcement.\n\n'The quarterly meeting has been rescheduled from Thursday to Wednesday due to a scheduling conflict. The time and location remain the same.'\n\nWhat changed about the meeting?",
+            "options": ["A. The location", "B. The time", "C. The day", "D. The agenda"],
+            "answer": "C",
+            "explanation": "公告中說會議從週四改到週三（rescheduled from Thursday to Wednesday），只有日期改變。"
+        }
+    ],
+    "Vocabulary": [
+        {
+            "question": "Choose the word that best completes the sentence.\n\nThe manager asked the team to ______ the project deadline by two weeks.",
+            "options": ["A. extend", "B. reduce", "C. ignore", "D. replace"],
+            "answer": "A",
+            "explanation": "extend 表示延長，符合句意「將截止日期延長兩週」。"
+        },
+        {
+            "question": "Choose the word closest in meaning to 'collaborate'.",
+            "options": ["A. compete", "B. cooperate", "C. complain", "D. calculate"],
+            "answer": "B",
+            "explanation": "collaborate 意思是合作，與 cooperate（合作）意思最接近。"
+        },
+        {
+            "question": "Choose the word that best completes the sentence.\n\nPlease ______ your attendance at the meeting by Friday.",
+            "options": ["A. confirm", "B. cancel", "C. confuse", "D. collect"],
+            "answer": "A",
+            "explanation": "confirm your attendance 是「確認出席」的固定用法，符合句意。"
+        },
+        {
+            "question": "Choose the word that best completes the sentence.\n\nThe new policy will ______ starting from next month.",
+            "options": ["A. take effect", "B. take place", "C. take over", "D. take back"],
+            "answer": "A",
+            "explanation": "take effect 表示「生效」，是描述政策或規定開始實施的固定用法。"
+        },
+        {
+            "question": "Choose the word closest in meaning to 'mandatory'.",
+            "options": ["A. optional", "B. suggested", "C. required", "D. helpful"],
+            "answer": "C",
+            "explanation": "mandatory 意思是強制性的、必須的，與 required（必要的）意思最接近。"
+        },
+        {
+            "question": "Choose the word that best completes the sentence.\n\nThe company decided to ______ its partnership with the supplier.",
+            "options": ["A. terminate", "B. celebrate", "C. donate", "D. estimate"],
+            "answer": "A",
+            "explanation": "terminate 表示終止，符合句意「終止與供應商的合作關係」。"
+        },
+        {
+            "question": "Choose the word closest in meaning to 'compensate'.",
+            "options": ["A. punish", "B. reimburse", "C. ignore", "D. delay"],
+            "answer": "B",
+            "explanation": "compensate 意思是補償，與 reimburse（償還、補償）意思最接近。"
+        },
+        {
+            "question": "Choose the word that best completes the sentence.\n\nThe sales team exceeded their ______ for the third quarter.",
+            "options": ["A. quota", "B. quality", "C. quantity", "D. question"],
+            "answer": "A",
+            "explanation": "quota 表示配額或業績目標，exceeded their quota 意思是「超過了他們的目標」。"
+        }
+    ],
+    "Grammar": [
+        {
+            "question": "Choose the correct form to complete the sentence.\n\nThe report ______ by the team before the deadline.",
+            "options": ["A. submit", "B. submitted", "C. was submitted", "D. submitting"],
+            "answer": "C",
+            "explanation": "這句是被動語態，主詞 The report 是被提交的，所以要用 was submitted（過去被動式）。"
+        },
+        {
+            "question": "Choose the correct word to complete the sentence.\n\nShe has been working at this company ______ five years.",
+            "options": ["A. since", "B. for", "C. during", "D. while"],
+            "answer": "B",
+            "explanation": "for 用於表示一段時間長度（five years），since 用於表示起點（a specific time）。"
+        },
+        {
+            "question": "Choose the grammatically correct sentence.",
+            "options": ["A. He don't know the answer.", "B. She have finished her work.", "C. They are waiting for the bus.", "D. We was happy about the news."],
+            "answer": "C",
+            "explanation": "They are waiting for the bus. 是正確的現在進行式句型。其他選項都有主詞動詞不一致的錯誤。"
+        },
+        {
+            "question": "Choose the correct form to complete the sentence.\n\nBy the time the manager arrived, the team ______ the presentation.",
+            "options": ["A. finish", "B. finished", "C. had finished", "D. will finish"],
+            "answer": "C",
+            "explanation": "By the time 引導的句子要用過去完成式（had finished），表示在某個過去時間點之前已完成的動作。"
+        },
+        {
+            "question": "Choose the correct word to complete the sentence.\n\nNeither the manager ______ the employees were informed about the change.",
+            "options": ["A. or", "B. nor", "C. but", "D. and"],
+            "answer": "B",
+            "explanation": "Neither...nor... 是固定搭配，表示「兩者都不」。"
+        },
+        {
+            "question": "Choose the correct form to complete the sentence.\n\nIf we ______ more time, we could have completed the project.",
+            "options": ["A. have", "B. had", "C. will have", "D. having"],
+            "answer": "B",
+            "explanation": "這是假設語氣（If + had + 過去分詞），表示與過去事實相反的假設。"
+        },
+        {
+            "question": "Choose the correct word to complete the sentence.\n\nThe new employee, ______ started last Monday, has already impressed the team.",
+            "options": ["A. who", "B. which", "C. whom", "D. whose"],
+            "answer": "A",
+            "explanation": "關係代名詞 who 用於指人，且在子句中作主詞，符合句意。"
+        },
+        {
+            "question": "Choose the grammatically correct sentence.",
+            "options": ["A. The meeting will reschedule tomorrow.", "B. The meeting will be rescheduled tomorrow.", "C. The meeting will be reschedule tomorrow.", "D. The meeting will rescheduling tomorrow."],
+            "answer": "B",
+            "explanation": "被動語態的正確結構是 will be + 過去分詞，所以應該是 will be rescheduled。"
+        }
+    ]
+}
 
 # 深色模式 session state
 if "dark_mode" not in st.session_state:
@@ -390,6 +545,8 @@ if st.sidebar.button(dark_label):
 
     st.sidebar.divider()
 
+st.sidebar.divider()
+
 # 切換到 AI 對話模式
 st.sidebar.subheader("💬 AI 對話助教")
 
@@ -399,6 +556,17 @@ if "chat_mode" not in st.session_state:
 if st.sidebar.button("💬 開啟 AI 對話"):
     st.session_state.chat_mode = not st.session_state.chat_mode
     st.rerun()
+
+st.sidebar.subheader("📝 練習題")
+
+if "quiz_mode" not in st.session_state:
+    st.session_state.quiz_mode = False
+
+if st.sidebar.button("📝 開始練習題"):
+    st.session_state.quiz_mode = not st.session_state.quiz_mode
+    st.rerun()
+
+st.sidebar.divider()
 
 # 手機版 sidebar 提示
 st.markdown(f"""
@@ -963,6 +1131,208 @@ if analysis_ready:
                 st.warning("AI 評估：持續進步中")
             else:
                 st.error("AI 評估：需加強基礎能力")
+
+# 練習題功能
+if st.session_state.quiz_mode:
+
+    st.markdown(f"""
+    <div style="
+        background: {card_bg};
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: {card_shadow};
+        margin-top: 30px;
+    ">
+        <h3 style="color: #667eea !important; font-weight: 700;">
+            📝 TOEIC 練習題
+        </h3>
+        <p style="color: {text_color} !important; font-size: 0.9rem;">
+            選擇題型開始練習，完成後自動記錄答對率！
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+
+    # 選擇題型
+    quiz_type = st.selectbox(
+        "選擇練習題型",
+        ["Reading", "Vocabulary", "Grammar"],
+        key="quiz_type"
+    )
+
+    # 初始化答題狀態
+    if "quiz_index" not in st.session_state:
+        st.session_state.quiz_index = 0
+    if "quiz_score" not in st.session_state:
+        st.session_state.quiz_score = 0
+    if "quiz_answered" not in st.session_state:
+        st.session_state.quiz_answered = False
+    if "quiz_finished" not in st.session_state:
+        st.session_state.quiz_finished = False
+    if "last_quiz_type" not in st.session_state:
+        st.session_state.last_quiz_type = quiz_type
+
+    # 題目數量選擇
+    num_questions = st.slider(
+        "選擇題目數量",
+        min_value=3,
+        max_value=8,
+        value=5,
+        key="num_questions"
+    )
+
+    # 如果換了題型或題目數量，重置狀態
+    if (st.session_state.last_quiz_type != quiz_type or
+        "quiz_questions" not in st.session_state):
+        random.shuffle(QUESTIONS[quiz_type])
+        st.session_state.quiz_questions = QUESTIONS[quiz_type][:num_questions]
+        st.session_state.quiz_index = 0
+        st.session_state.quiz_score = 0
+        st.session_state.quiz_answered = False
+        st.session_state.quiz_finished = False
+        st.session_state.last_quiz_type = quiz_type
+
+    questions = st.session_state.quiz_questions
+    total = len(questions)
+
+    if not st.session_state.quiz_finished:
+
+        current_q = questions[st.session_state.quiz_index]
+
+        # 進度條
+        progress = st.session_state.quiz_index / total
+        st.progress(progress)
+        st.write(f"第 {st.session_state.quiz_index + 1} 題 / 共 {total} 題")
+
+        # 題目
+        st.markdown(f"""
+        <div style="
+            background: {card_bg};
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: {card_shadow};
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        ">
+            <p style="color: {text_color} !important; font-size: 1rem; white-space: pre-line;">
+                {current_q["question"]}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # 選項
+        selected = st.radio(
+            "請選擇答案",
+            current_q["options"],
+            key=f"q_{st.session_state.quiz_index}",
+            label_visibility="collapsed"
+        )
+
+        if not st.session_state.quiz_answered:
+            if st.button("確認答案 ✓", key="confirm_answer"):
+                st.session_state.quiz_answered = True
+                selected_letter = selected[0]
+
+                if selected_letter == current_q["answer"]:
+                    st.session_state.quiz_score += 1
+                    st.success("✅ 答對了！")
+                else:
+                    st.error(f"❌ 答錯了！正確答案是 {current_q['answer']}")
+
+                st.info(f"📖 解析：{current_q['explanation']}")
+
+        else:
+            selected_letter = selected[0]
+            if selected_letter == current_q["answer"]:
+                st.success("✅ 答對了！")
+            else:
+                st.error(f"❌ 答錯了！正確答案是 {current_q['answer']}")
+
+            st.info(f"📖 解析：{current_q['explanation']}")
+
+            if st.session_state.quiz_index + 1 < total:
+                if st.button("下一題 →", key="next_question"):
+                    st.session_state.quiz_index += 1
+                    st.session_state.quiz_answered = False
+                    st.rerun()
+            else:
+                if st.button("查看結果 🎯", key="show_result"):
+                    st.session_state.quiz_finished = True
+                    st.rerun()
+
+    else:
+        # 顯示結果
+        score = st.session_state.quiz_score
+        accuracy = score / total
+
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            margin: 20px 0;
+        ">
+            <h2 style="color: white !important; font-size: 2rem;">🎯 練習結果</h2>
+            <p style="color: white !important; font-size: 1.5rem; font-weight: 700;">
+                {score} / {total} 題答對
+            </p>
+            <p style="color: rgba(255,255,255,0.9) !important; font-size: 1.2rem;">
+                答對率：{int(accuracy * 100)}%
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if accuracy >= 0.8:
+            st.success("🌟 表現優秀！繼續保持！")
+        elif accuracy >= 0.5:
+            st.warning("📚 還不錯！多加練習可以更好！")
+        else:
+            st.error("💪 需要加強！建議多看解析後重新練習！")
+
+        # 自動更新答對率
+        if username:
+            st.info(f"✅ 已自動將 {quiz_type} 答對率（{int(accuracy * 100)}%）更新到您的分析紀錄！")
+
+            save_data = pd.DataFrame([{
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Reading": accuracy if quiz_type == "Reading" else 0.5,
+                "Vocabulary": accuracy if quiz_type == "Vocabulary" else 0.5,
+                "Grammar": accuracy if quiz_type == "Grammar" else 0.5,
+                "Predicted_TOEIC": int((accuracy * 0.5 + 0.5 * 0.3 + 0.5 * 0.2) * 990),
+                "ML_TOEIC": int((accuracy * 0.5 + 0.5 * 0.3 + 0.5 * 0.2) * 990)
+            }])
+
+            os.makedirs("users", exist_ok=True)
+            user_folder = f"users/{username}"
+            os.makedirs(user_folder, exist_ok=True)
+            save_file = f"{user_folder}/results.csv"
+
+            if os.path.exists(save_file):
+                old_data = pd.read_csv(save_file)
+                new_data = pd.concat([old_data, save_data], ignore_index=True)
+                new_data.to_csv(save_file, index=False)
+            else:
+                save_data.to_csv(save_file, index=False)
+        else:
+            st.warning("⚠️ 請先登入使用者名稱才能儲存練習紀錄！")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 重新練習（換一組題目）", key="restart_quiz"):
+                random.shuffle(QUESTIONS[quiz_type])
+                st.session_state.quiz_questions = QUESTIONS[quiz_type][:num_questions]
+                st.session_state.quiz_index = 0
+                st.session_state.quiz_score = 0
+                st.session_state.quiz_answered = False
+                st.session_state.quiz_finished = False
+                st.rerun()
+        with col2:
+            if st.button("📊 查看分析", key="go_analysis"):
+                st.session_state.quiz_mode = False
+                st.rerun()
 
 # AI 對話功能
 if st.session_state.chat_mode:
