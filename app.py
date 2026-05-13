@@ -15,219 +15,195 @@ from sklearn.linear_model import LinearRegression
 # PDF 產生函式
 def generate_pdf(username, reading_score, vocabulary_score, grammar_score, predicted_toeic):
 
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
-    from reportlab.lib.units import cm
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
+    from fpdf import FPDF
+    import urllib.request
     import io
 
-    # 下載並註冊中文字體
-    import urllib.request
+    # 下載中文字體
+    font_path = "NotoSansTC-Regular.ttf"
 
-    font_path = "NotoSansTC.ttf"
+    class PDF(FPDF):
+        def header(self):
+            pass
+        def footer(self):
+            self.set_y(-15)
+            self.set_font("NotoSans", size=8)
+            self.set_text_color(150, 150, 150)
+            self.cell(0, 10, "EduInsight AI English Learning Platform | Powered by Groq AI x Machine Learning", align="C")
 
-    if not os.path.exists(font_path):
-        urllib.request.urlretrieve(
-            "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/TraditionalChinese/NotoSansCJKtc-Regular.otf",
-            font_path
-        )
+    pdf = PDF()
+    pdf.add_page()
 
+    # 加入字體
     try:
-        pdfmetrics.registerFont(TTFont("NotoSansTC", font_path))
-        chinese_font = "NotoSansTC"
+        pdf.add_font("NotoSans", fname=font_path)
+        font_name = "NotoSans"
     except:
-        chinese_font = "Helvetica"
-
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        rightMargin=2*cm,
-        leftMargin=2*cm,
-        topMargin=2*cm,
-        bottomMargin=2*cm
-    )
-
-    elements = []
-    styles = getSampleStyleSheet()
-
-    title_style = ParagraphStyle(
-        "title",
-        parent=styles["Title"],
-        fontSize=24,
-        textColor=colors.HexColor("#667eea"),
-        spaceAfter=10,
-        alignment=1,
-        fontName=chinese_font
-    )
-
-    subtitle_style = ParagraphStyle(
-        "subtitle",
-        parent=styles["Normal"],
-        fontSize=12,
-        textColor=colors.HexColor("#764ba2"),
-        spaceAfter=5,
-        alignment=1,
-        fontName=chinese_font
-    )
-
-    heading_style = ParagraphStyle(
-        "heading",
-        parent=styles["Heading2"],
-        fontSize=14,
-        textColor=colors.HexColor("#667eea"),
-        spaceBefore=15,
-        spaceAfter=8,
-        fontName=chinese_font
-    )
-
-    normal_style = ParagraphStyle(
-        "normal",
-        parent=styles["Normal"],
-        fontSize=11,
-        textColor=colors.HexColor("#1a1a2e"),
-        spaceAfter=5,
-        leading=18,
-        fontName=chinese_font
-    )
+        font_name = "Helvetica"
 
     # 標題
-    elements.append(Paragraph("EduInsight", title_style))
-    elements.append(Paragraph("AI 英文學習分析報告", subtitle_style))
-    elements.append(Spacer(1, 0.3*cm))
-    elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor("#667eea")))
-    elements.append(Spacer(1, 0.5*cm))
+    pdf.set_font(font_name, size=28)
+    pdf.set_text_color(102, 126, 234)
+    pdf.cell(0, 15, "EduInsight", align="C", new_x="LMARGIN", new_y="NEXT")
+
+    pdf.set_font(font_name, size=14)
+    pdf.set_text_color(118, 75, 162)
+    pdf.cell(0, 10, "AI 英文學習分析報告", align="C", new_x="LMARGIN", new_y="NEXT")
+
+    # 分隔線
+    pdf.set_draw_color(102, 126, 234)
+    pdf.set_line_width(0.8)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(8)
 
     # 基本資訊
-    elements.append(Paragraph("📋 基本資訊", heading_style))
+    pdf.set_font(font_name, size=14)
+    pdf.set_text_color(102, 126, 234)
+    pdf.cell(0, 10, "📋 基本資訊", new_x="LMARGIN", new_y="NEXT")
 
-    info_data = [
-        ["使用者", username if username else "未登入"],
-        ["報告日期", datetime.now().strftime("%Y年%m月%d日 %H:%M")],
-        ["預測 TOEIC 分數", f"{int(predicted_toeic)} 分"]
+    info_list = [
+        ("使用者", username if username else "未登入"),
+        ("報告日期", datetime.now().strftime("%Y年%m月%d日 %H:%M")),
+        ("預測 TOEIC 分數", f"{int(predicted_toeic)} 分")
     ]
 
-    info_table = Table(info_data, colWidths=[4*cm, 12*cm])
-    info_table.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), chinese_font),
-        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#667eea")),
-        ("TEXTCOLOR", (0, 0), (0, -1), colors.white),
-        ("BACKGROUND", (1, 0), (1, -1), colors.HexColor("#f3e8ff")),
-        ("TEXTCOLOR", (1, 0), (1, -1), colors.HexColor("#1a1a2e")),
-        ("FONTSIZE", (0, 0), (-1, -1), 11),
-        ("ROWBACKGROUNDS", (1, 0), (1, -1), [colors.HexColor("#f3e8ff"), colors.HexColor("#ede8ff")]),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
-        ("PADDING", (0, 0), (-1, -1), 8),
-        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-    ]))
-    elements.append(info_table)
-    elements.append(Spacer(1, 0.5*cm))
+    for label, value in info_list:
+        pdf.set_fill_color(102, 126, 234)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font(font_name, size=11)
+        pdf.cell(45, 10, label, fill=True, border=1)
+        pdf.set_fill_color(243, 232, 255)
+        pdf.set_text_color(26, 26, 46)
+        pdf.cell(145, 10, value, fill=True, border=1, new_x="LMARGIN", new_y="NEXT")
+
+    pdf.ln(5)
+
+    # 分隔線
+    pdf.set_draw_color(200, 200, 200)
+    pdf.set_line_width(0.3)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
 
     # 能力分析
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
-    elements.append(Paragraph("📊 英文能力分析", heading_style))
+    pdf.set_font(font_name, size=14)
+    pdf.set_text_color(102, 126, 234)
+    pdf.cell(0, 10, "📊 英文能力分析", new_x="LMARGIN", new_y="NEXT")
 
-    score_data = [
-        ["能力項目", "分數", "程度評估", "建議"],
-        [
-            "Reading（閱讀）",
-            f"{int(reading_score * 100)}%",
-            "優秀" if reading_score >= 0.8 else "普通" if reading_score >= 0.5 else "待加強",
-            "持續保持" if reading_score >= 0.8 else "加強練習" if reading_score >= 0.5 else "需要加強"
-        ],
-        [
-            "Vocabulary（詞彙）",
-            f"{int(vocabulary_score * 100)}%",
-            "優秀" if vocabulary_score >= 0.8 else "普通" if vocabulary_score >= 0.5 else "待加強",
-            "持續保持" if vocabulary_score >= 0.8 else "加強練習" if vocabulary_score >= 0.5 else "需要加強"
-        ],
-        [
-            "Grammar（語法）",
-            f"{int(grammar_score * 100)}%",
-            "優秀" if grammar_score >= 0.8 else "普通" if grammar_score >= 0.5 else "待加強",
-            "持續保持" if grammar_score >= 0.8 else "加強練習" if grammar_score >= 0.5 else "需要加強"
-        ]
+    # 表頭
+    headers = ["能力項目", "分數", "程度評估", "建議"]
+    widths = [55, 25, 35, 75]
+
+    pdf.set_fill_color(102, 126, 234)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font(font_name, size=10)
+
+    for i, header in enumerate(headers):
+        pdf.cell(widths[i], 10, header, fill=True, border=1)
+    pdf.ln()
+
+    # 資料列
+    rows = [
+        ("Reading（閱讀）", f"{int(reading_score * 100)}%",
+         "優秀" if reading_score >= 0.8 else "普通" if reading_score >= 0.5 else "待加強",
+         "持續保持" if reading_score >= 0.8 else "加強練習" if reading_score >= 0.5 else "需要加強"),
+        ("Vocabulary（詞彙）", f"{int(vocabulary_score * 100)}%",
+         "優秀" if vocabulary_score >= 0.8 else "普通" if vocabulary_score >= 0.5 else "待加強",
+         "持續保持" if vocabulary_score >= 0.8 else "加強練習" if vocabulary_score >= 0.5 else "需要加強"),
+        ("Grammar（語法）", f"{int(grammar_score * 100)}%",
+         "優秀" if grammar_score >= 0.8 else "普通" if grammar_score >= 0.5 else "待加強",
+         "持續保持" if grammar_score >= 0.8 else "加強練習" if grammar_score >= 0.5 else "需要加強"),
     ]
 
-    score_table = Table(score_data, colWidths=[4*cm, 2.5*cm, 3*cm, 6.5*cm])
-    score_table.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), chinese_font),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#667eea")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#f3e8ff"), colors.HexColor("#ffffff")]),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
-        ("PADDING", (0, 0), (-1, -1), 8),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (0, 1), (0, -1), "LEFT"),
-    ]))
-    elements.append(score_table)
-    elements.append(Spacer(1, 0.5*cm))
+    for i, row in enumerate(rows):
+        if i % 2 == 0:
+            pdf.set_fill_color(243, 232, 255)
+        else:
+            pdf.set_fill_color(255, 255, 255)
+        pdf.set_text_color(26, 26, 46)
+        for j, cell in enumerate(row):
+            pdf.cell(widths[j], 10, cell, fill=True, border=1)
+        pdf.ln()
+
+    pdf.ln(5)
+
+    # 分隔線
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
 
     # AI 學習建議
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
-    elements.append(Paragraph("🤖 AI 學習建議", heading_style))
+    pdf.set_font(font_name, size=14)
+    pdf.set_text_color(102, 126, 234)
+    pdf.cell(0, 10, "AI 學習建議", new_x="LMARGIN", new_y="NEXT")
+
+    pdf.set_font(font_name, size=11)
+    pdf.set_text_color(26, 26, 46)
+
+    suggestions = []
 
     if reading_score < 0.5:
-        elements.append(Paragraph("📖 Reading 建議：", normal_style))
-        elements.append(Paragraph("• 每天閱讀英文文章 15 分鐘", normal_style))
-        elements.append(Paragraph("• 練習 TOEIC Part 7 長篇閱讀", normal_style))
-        elements.append(Paragraph("• 訓練關鍵字定位能力", normal_style))
+        suggestions.append("Reading 建議：")
+        suggestions.append("  • 每天閱讀英文文章 15 分鐘")
+        suggestions.append("  • 練習 TOEIC Part 7 長篇閱讀")
+        suggestions.append("  • 訓練關鍵字定位能力")
     elif reading_score < 0.8:
-        elements.append(Paragraph("📖 Reading 建議：", normal_style))
-        elements.append(Paragraph("• 增加閱讀速度練習", normal_style))
-        elements.append(Paragraph("• 嘗試閱讀更長的文章", normal_style))
+        suggestions.append("Reading 建議：")
+        suggestions.append("  • 增加閱讀速度練習")
+        suggestions.append("  • 嘗試閱讀更長的文章")
 
     if vocabulary_score < 0.5:
-        elements.append(Paragraph("📚 Vocabulary 建議：", normal_style))
-        elements.append(Paragraph("• 每日背誦 20 個商業英文單字", normal_style))
-        elements.append(Paragraph("• 練習 TOEIC 同義字題型", normal_style))
+        suggestions.append("Vocabulary 建議：")
+        suggestions.append("  • 每日背誦 20 個商業英文單字")
+        suggestions.append("  • 練習 TOEIC 同義字題型")
     elif vocabulary_score < 0.8:
-        elements.append(Paragraph("📚 Vocabulary 建議：", normal_style))
-        elements.append(Paragraph("• 持續累積多益核心單字", normal_style))
+        suggestions.append("Vocabulary 建議：")
+        suggestions.append("  • 持續累積多益核心單字")
 
     if grammar_score < 0.5:
-        elements.append(Paragraph("✏️ Grammar 建議：", normal_style))
-        elements.append(Paragraph("• 加強時態與被動語態練習", normal_style))
-        elements.append(Paragraph("• 練習介系詞與連接詞用法", normal_style))
+        suggestions.append("Grammar 建議：")
+        suggestions.append("  • 加強時態與被動語態練習")
+        suggestions.append("  • 練習介系詞與連接詞用法")
     elif grammar_score < 0.8:
-        elements.append(Paragraph("✏️ Grammar 建議：", normal_style))
-        elements.append(Paragraph("• 增加文法題練習量", normal_style))
+        suggestions.append("Grammar 建議：")
+        suggestions.append("  • 增加文法題練習量")
 
-    elements.append(Spacer(1, 0.5*cm))
+    for s in suggestions:
+        pdf.cell(0, 8, s, new_x="LMARGIN", new_y="NEXT")
+
+    pdf.ln(5)
+
+    # 分隔線
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
 
     # TOEIC 預測
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
-    elements.append(Paragraph("🎯 TOEIC 預測結果", heading_style))
+    pdf.set_font(font_name, size=14)
+    pdf.set_text_color(102, 126, 234)
+    pdf.cell(0, 10, "TOEIC 預測結果", new_x="LMARGIN", new_y="NEXT")
 
-    toeic_level = ""
+    pdf.set_font(font_name, size=11)
+    pdf.set_text_color(26, 26, 46)
+    pdf.cell(0, 8, f"預測分數：{int(predicted_toeic)} 分", new_x="LMARGIN", new_y="NEXT")
+
     if predicted_toeic >= 750:
-        toeic_level = "高分潛力 🌟 - 您的英文能力已達到優秀水準！"
+        level = "高分潛力 - 您的英文能力已達到優秀水準！"
     elif predicted_toeic >= 550:
-        toeic_level = "持續進步中 📈 - 繼續努力，目標指日可待！"
+        level = "持續進步中 - 繼續努力，目標指日可待！"
     else:
-        toeic_level = "需加強基礎 💪 - 建議加強各項基礎能力！"
+        level = "需加強基礎 - 建議加強各項基礎能力！"
 
-    elements.append(Paragraph(f"預測分數：{int(predicted_toeic)} 分", normal_style))
-    elements.append(Paragraph(f"AI 評估：{toeic_level}", normal_style))
-    elements.append(Spacer(1, 0.5*cm))
+    pdf.cell(0, 8, f"AI 評估：{level}", new_x="LMARGIN", new_y="NEXT")
 
-    # 頁尾
-    elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor("#667eea")))
-    elements.append(Spacer(1, 0.3*cm))
-    elements.append(Paragraph(
-        "EduInsight AI English Learning Analysis Platform | Powered by Groq AI x Machine Learning",
-        ParagraphStyle("footer", parent=styles["Normal"], fontSize=9,
-                      textColor=colors.HexColor("#999999"), alignment=1,
-                      fontName=chinese_font)
-    ))
+    # 底部分隔線
+    pdf.ln(5)
+    pdf.set_draw_color(102, 126, 234)
+    pdf.set_line_width(0.8)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
 
-    doc.build(elements)
+    # 輸出
+    buffer = io.BytesIO()
+    pdf.output(buffer)
     buffer.seek(0)
     return buffer
 
@@ -614,41 +590,44 @@ st.markdown(f"""
         opacity: 0.3 !important;
     }}
     
-    /* sidebar 收合按鈕樣式 */
-    [data-testid="stSidebarCollapseButton"] {{
-        background: linear-gradient(90deg, #667eea, #764ba2) !important;
-        border-radius: 10px !important;
-        width: 40px !important;
-        height: 40px !important;
-    }}
-
-    [data-testid="stSidebarCollapseButton"] svg {{
-        fill: white !important;
-        color: white !important;
+    /* sidebar 收合後的按鈕 */
+    section[data-testid="stSidebarCollapsedControl"] {{
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }}
 
     section[data-testid="stSidebarCollapsedControl"] button {{
-        background: linear-gradient(90deg, #667eea, #764ba2) !important;
+        background: linear-gradient(90deg, #667eea, #764ba2) !important;background: 
         border-radius: 10px !important;
-        width: 40px !important;
-        height: 40px !important;
+        width: 45px !important;
+        height: 45px !important;
+        border: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }}
 
-    section[data-testid="stSidebarCollapsedControl"] svg {{
-        fill: white !important;
+    section[data-testid="stSidebarCollapsedControl"] button * {{
         color: white !important;
+        fill: white !important;
+        opacity: 1 !important;
+        visibility: visible !important;
     }}
 
-    section[data-testid="stSidebarCollapsedControl"] {{
+    section[data-testid="stSidebarCollapsedControl"] span[data-testid] {{
+        display: block !important;
+        color: white !important;
+        font-size: 1.5rem !important;
+        opacity: 1 !important;
+    }}
+
+    section[data-testid="stSidebarCollapsedControl"] span:not([data-testid]) {{
         display: none !important;
     }}
 
-    .st-emotion-cache-ol6tze {{
-        display: none !important;
-    }}
-
-    /* 隱藏所有 icon 文字 */
-    [data-testid="collapsedControl"] {{
+    /* 隱藏 collapsedControl 內的文字但保留按鈕 */
+    [data-testid="collapsedControl"] span {{
         display: none !important;
     }}
 
@@ -699,11 +678,27 @@ st.markdown(f"""
         color: #999999 !important;
         opacity: 1 !important;
     }}
+    
+    /* Download Button 樣式 */
+    [data-testid="stDownloadButton"] > button {{
+        background: linear-gradient(90deg, #667eea, #764ba2) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 25px !important;
+        padding: 10px 30px !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        width: 100% !important;
+    }}
 
-    /* 隱藏按鈕內的文字但保留圖示 */
-    [data-testid="stSidebarCollapseButton"] span,
-    section[data-testid="stSidebarCollapsedControl"] span {{
-        display: none !important;
+    [data-testid="stDownloadButton"] > button:hover {{
+        transform: translateY(-2px) !important;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4) !important;
+    }}
+
+    [data-testid="stDownloadButton"] > button p,
+    [data-testid="stDownloadButton"] > button span {{
+        color: white !important;
     }}
 
 </style>
