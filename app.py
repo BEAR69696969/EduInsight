@@ -1,3 +1,11 @@
+import streamlit as st
+st.set_page_config(
+    page_title="EduInsight",
+    page_icon="🌍",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -11,6 +19,43 @@ import plotly.express as px
 import numpy as np
 import random
 from sklearn.linear_model import LinearRegression
+
+# 計算連續學習天數
+def calculate_streak(username):
+
+    if not username:
+        return 0, []
+
+    save_file = f"users/{username}/results.csv"
+
+    if not os.path.exists(save_file):
+        return 0, []
+
+    try:
+        data = pd.read_csv(save_file)
+        data["time"] = pd.to_datetime(data["time"])
+        data["date"] = data["time"].dt.date
+
+        # 取得不重複的學習日期並排序
+        dates = sorted(data["date"].unique(), reverse=True)
+
+        if len(dates) == 0:
+            return 0, []
+
+        today = datetime.now().date()
+        streak = 0
+
+        for i, date in enumerate(dates):
+            expected = today - pd.Timedelta(days=i)
+            if date == expected:
+                streak += 1
+            else:
+                break
+
+        return streak, dates
+
+    except:
+        return 0, []
 
 # PDF 產生函式
 def generate_pdf(username, reading_score, vocabulary_score, grammar_score, predicted_toeic):
@@ -589,16 +634,24 @@ st.markdown(f"""
         border-color: #667eea !important;
         opacity: 0.3 !important;
     }}
-    
-    /* 隱藏 Streamlit 預設 header */
-    header[data-testid="stHeader"] {{
+
+    /* sidebar 收合按鈕樣式 */
+    [data-testid="stSidebarCollapseButton"] {{
+        background: linear-gradient(90deg, #667eea, #764ba2) !important;
+        border-radius: 10px !important;
+    }}
+
+    [data-testid="stSidebarCollapseButton"] svg {{
+        fill: white !important;
+        color: white !important;
+    }}
+
+    /* 隱藏按鈕文字只保留圖示 */
+    [data-testid="stSidebarCollapseButton"] span:not([data-testid="icon"]) {{
         display: none !important;
     }}
 
-    /* 隱藏所有 sidebar 收合相關按鈕 */
-    [data-testid="stSidebarCollapseButton"],
-    section[data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"] {{
+    [data-testid="collapsedControl"] span:not([data-testid="icon"]) {{
         display: none !important;
     }}
 
@@ -721,7 +774,36 @@ st.sidebar.subheader("👤 使用者登入")
 username = st.sidebar.text_input("請輸入使用者名稱")
 
 if username:
+    streak, dates = calculate_streak(username)
+    if streak >= 7:
+        streak_emoji = "🔥🔥🔥"
+    elif streak >= 3:
+        streak_emoji = "🔥🔥"
+    elif streak >= 1:
+        streak_emoji = "🔥"
+    else:
+        streak_emoji = "💤"
+
     st.sidebar.success(f"✅ 歡迎，{username}！")
+    st.sidebar.markdown(f"""
+    <div style="
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 10px 15px;
+        text-align: center;
+        margin-top: 5px;
+    ">
+        <p style="color: white !important; font-size: 1.5rem; margin: 0;">
+            {streak_emoji}
+        </p>
+        <p style="color: white !important; font-size: 1.2rem; font-weight: 700; margin: 0;">
+            連續學習 {streak} 天
+        </p>
+        <p style="color: rgba(255,255,255,0.7) !important; font-size: 0.8rem; margin: 0;">
+            {"今天記得練習！" if streak == 0 else "繼續保持！加油！"}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 else:
     st.sidebar.warning("⚠️ 請輸入使用者名稱後再儲存紀錄")
     
@@ -737,8 +819,6 @@ if st.sidebar.button(dark_label):
     st.rerun()
 
     st.sidebar.divider()
-
-st.sidebar.divider()
 
 st.sidebar.divider()
 st.sidebar.subheader("🎯 學習目標")
@@ -794,7 +874,6 @@ st.markdown(f"""
     display: flex;
     align-items: center;
     gap: 10px;
-    cursor: pointer;
 ">
     <span style="font-size: 1.5rem;">☰</span>
     <p style="
@@ -802,9 +881,59 @@ st.markdown(f"""
         margin: 0;
         font-size: 0.9rem;
         font-weight: 600;
-    ">點擊這裡或左側邊欄開啟選單</p>
+    ">手機用戶請點左上角 ☰ 開啟選單</p>
 </div>
 """, unsafe_allow_html=True)
+
+# 連續學習天數卡片（登入後才顯示）
+if username:
+    streak, dates = calculate_streak(username)
+
+    if streak >= 7:
+        streak_color = "#ff6b6b"
+        streak_emoji = "🔥🔥🔥"
+        streak_msg = "超強！連續一週以上！"
+    elif streak >= 3:
+        streak_color = "#ffa500"
+        streak_emoji = "🔥🔥"
+        streak_msg = "很棒！保持下去！"
+    elif streak >= 1:
+        streak_color = "#667eea"
+        streak_emoji = "🔥"
+        streak_msg = "好的開始！繼續加油！"
+    else:
+        streak_color = "#999999"
+        streak_emoji = "💤"
+        streak_msg = "今天開始練習吧！"
+
+    st.markdown(f"""
+    <div style="
+        background: {card_bg};
+        border-radius: 20px;
+        padding: 20px 30px;
+        box-shadow: {card_shadow};
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        border-left: 5px solid {streak_color};
+    ">
+        <div style="font-size: 3rem;">{streak_emoji}</div>
+        <div>
+            <p style="
+                color: {streak_color} !important;
+                font-size: 1.8rem;
+                font-weight: 800;
+                margin: 0;
+            ">連續學習 {streak} 天</p>
+            <p style="
+                color: {text_color} !important;
+                font-size: 0.9rem;
+                margin: 0;
+            ">{streak_msg}</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # 模式選擇
 analysis_ready = False
