@@ -424,7 +424,7 @@ st.markdown(f"""
 # 模式選擇
 analysis_ready = False
 mode = st.radio(
-    
+
     "選擇輸入方式",
     ["手動輸入", "CSV 上傳"]
 )
@@ -900,6 +900,8 @@ if analysis_ready:
         else:
             st.info("目前還沒有歷史資料，請先儲存一次分析結果！")
 
+        st.divider()
+
         # ✅ Machine Learning 預測（加上例外處理）
         st.subheader("Machine Learning TOEIC 預測")
 
@@ -1086,6 +1088,8 @@ if st.session_state.chat_mode:
         if st.button("🗑️ 清除對話紀錄", key="clear_chat"):
             st.session_state.messages = []
             st.rerun()
+
+st.divider()
 
 # 頁尾
 st.markdown("""
