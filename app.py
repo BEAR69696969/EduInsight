@@ -403,7 +403,7 @@ QUESTIONS = {
             "answer": "B",
             "explanation": "被動語態的正確結構是 will be + 過去分詞，所以應該是 will be rescheduled。"
         }
-    ]
+    ]    
 }
 
 # 深色模式 session state
@@ -741,6 +741,24 @@ st.markdown(f"""
         width: 1.5rem !important;
         height: 1.5rem !important;
         color: white !important;
+    }}
+    /* 強制隱藏 expander 的 Material Icon 文字 */
+    details summary p {{
+        display: inline !important;
+    }}
+
+    [data-testid="stExpander"] summary .material-symbols-rounded {{
+        font-size: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        position: absolute !important;
+    }}
+
+    [data-testid="stExpander"] details summary span.material-symbols-rounded {{
+        font-size: 0 !important;
+        visibility: hidden !important;
+        position: absolute !important;
     }}
 
 </style>
@@ -1873,34 +1891,39 @@ if st.session_state.get("wrong_mode", False):
 
             for i, row in filtered.iterrows():
 
-                with st.expander(
-                    f"❌ [{row['type']}] {row['question'][:50]}...",
-                    expanded=False
-                ):
-                    st.markdown(f"""
-                    <div style="
-                        background: {card_bg};
-                        border-radius: 10px;
-                        padding: 15px;
-                        box-shadow: {card_shadow};
-                    ">
-                        <p style="color: {text_color} !important; white-space: pre-line;">
-                            {row['question']}
-                        </p>
-                        <p style="color: #ff6b6b !important;">
-                            ❌ 您的答案：{row['user_answer']}
-                        </p>
-                        <p style="color: #51cf66 !important;">
-                            ✅ 正確答案：{row['correct_answer']}
-                        </p>
-                        <p style="color: {text_color} !important;">
-                            📖 解析：{row['explanation']}
-                        </p>
-                        <p style="color: rgba(150,150,150,0.8) !important; font-size: 0.8rem;">
-                            🕐 錯誤時間：{row['time']}
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                st.markdown(f"""
+                <div style="
+                    background: {card_bg};
+                    border-radius: 15px;
+                    padding: 20px 25px;
+                    box-shadow: {card_shadow};
+                    margin-bottom: 15px;
+                    border-left: 4px solid #ff6b6b;
+                ">
+                    <p style="
+                        color: #ff6b6b !important;
+                        font-weight: 700;
+                        font-size: 0.95rem;
+                        margin-bottom: 10px;
+                    ">❌ [{row['type']}] {row['question'][:60]}...</p>
+                    <hr style="border-color: rgba(255,107,107,0.3); margin: 10px 0;">
+                    <p style="color: {text_color} !important; white-space: pre-line; font-size: 0.9rem;">
+                        {row['question']}
+                    </p>
+                    <p style="color: #ff6b6b !important; margin-top: 10px;">
+                        ❌ 您的答案：{row['user_answer']}
+                    </p>
+                    <p style="color: #51cf66 !important;">
+                        ✅ 正確答案：{row['correct_answer']}
+                    </p>
+                    <p style="color: {text_color} !important;">
+                        📖 解析：{row['explanation']}
+                    </p>
+                    <p style="color: rgba(150,150,150,0.8) !important; font-size: 0.8rem;">
+                        🕐 錯誤時間：{row['time']}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
 
             st.divider()
 
