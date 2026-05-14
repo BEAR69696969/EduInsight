@@ -20,6 +20,95 @@ import numpy as np
 import random
 from sklearn.linear_model import LinearRegression
 
+# 動畫數字元件
+def animated_metric(label, value, suffix="", color="#667eea"):
+    return f"""
+    <div style="
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        border-left: 4px solid {color};
+        text-align: center;
+        animation: fadeInUp 0.6s ease forwards;
+    ">
+        <style>
+            @keyframes fadeInUp {{
+                from {{
+                    opacity: 0;
+                    transform: translateY(20px);
+                }}
+                to {{
+                    opacity: 1;
+                    transform: translateY(0);
+                }}
+            }}
+            @keyframes countUp {{
+                from {{ opacity: 0; transform: scale(0.5); }}
+                to {{ opacity: 1; transform: scale(1); }}
+            }}
+        </style>
+        <p style="
+            color: #666 !important;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+        ">{label}</p>
+        <p style="
+            color: {color} !important;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0;
+            animation: countUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        ">{value}{suffix}</p>
+    </div>
+    """
+
+# AI 自動出題函式
+def generate_ai_question(quiz_type, difficulty="中級"):
+    try:
+        from groq import Groq
+        import json
+
+        client = Groq(
+            api_key=st.secrets["GROQ_API_KEY"]
+        )
+
+        prompt = f"""
+請產生一道 TOEIC {quiz_type} 練習題，難度為{difficulty}。
+
+要求：
+- 題目必須是英文
+- 必須有 4 個選項（A、B、C、D）
+- 必須提供正確答案
+- 必須提供繁體中文解析
+
+請用以下 JSON 格式回答，不要加任何其他文字：
+{{
+    "question": "題目內容",
+    "options": ["A. 選項一", "B. 選項二", "C. 選項三", "D. 選項四"],
+    "answer": "A",
+    "explanation": "繁體中文解析"
+}}
+"""
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=500
+        )
+
+        text = response.choices[0].message.content.strip()
+
+        # 清除可能的 markdown 格式
+        text = text.replace("```json", "").replace("```", "").strip()
+
+        question = json.loads(text)
+        return question
+
+    except Exception as e:
+        return None
+
 # 計算連續學習天數
 def calculate_streak(username):
 
@@ -1195,11 +1284,28 @@ if analysis_ready:
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            st.metric("Reading", f"{int(reading_score * 100)}%")
+            st.markdown(animated_metric(
+                "📖 Reading",
+                int(reading_score * 100),
+                "%",
+                "#667eea"
+            ), unsafe_allow_html=True)
+
         with col2:
-            st.metric("Vocabulary", f"{int(vocabulary_score * 100)}%")
+            st.markdown(animated_metric(
+                "📚 Vocabulary",
+                int(vocabulary_score * 100),
+                "%",
+                "#764ba2"
+            ), unsafe_allow_html=True)
+
         with col3:
-            st.metric("Grammar", f"{int(grammar_score * 100)}%")
+            st.markdown(animated_metric(
+                "✏️ Grammar",
+                int(grammar_score * 100),
+                "%",
+                "#f093fb"
+            ), unsafe_allow_html=True)
 
     with tab2:
 
@@ -1258,10 +1364,12 @@ if analysis_ready:
             + grammar_score * 0.2
         ) * 990
 
-        st.metric(
-            label="AI 預測 TOEIC 分數",
-            value=f"{int(predicted_toeic)} 分"
-        )
+        st.markdown(animated_metric(
+            "🎯 AI 預測 TOEIC 分數",
+            int(predicted_toeic),
+            " 分",
+            "#667eea"
+        ), unsafe_allow_html=True)
 
         st.divider()
         
@@ -1637,6 +1745,57 @@ if st.session_state.quiz_mode:
     if "last_quiz_type" not in st.session_state:
         st.session_state.last_quiz_type = quiz_type
 
+# AI 出題區塊
+    st.markdown(f"""
+    <div style="
+        background: {card_bg};
+        border-radius: 15px;
+        padding: 15px 20px;
+        box-shadow: {card_shadow};
+        margin-bottom: 15px;
+        border-left: 4px solid #51cf66;
+    ">
+        <p style="color: #51cf66 !important; font-weight: 700; margin: 0;">
+            🤖 AI 自動出題
+        </p>
+        <p style="color: {text_color} !important; font-size: 0.85rem; margin: 5px 0 0 0;">
+            讓 AI 幫你產生新題目，加入題庫！
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    diff_col, btn_col = st.columns([2, 1])
+
+    with diff_col:
+        ai_difficulty = st.selectbox(
+            "選擇難度",
+            ["初級", "中級", "高級"],
+            key="ai_difficulty"
+        )
+
+    with btn_col:
+        st.write("")
+        st.write("")
+        if st.button("🤖 AI 出題", key="ai_generate"):
+            with st.spinner("AI 正在出題..."):
+                new_q = generate_ai_question(quiz_type, ai_difficulty)
+                if new_q:
+                    QUESTIONS[quiz_type].append(new_q)
+
+                    # 重置練習狀態讓新題目可以被抽到
+                    st.session_state.quiz_questions = None
+                    st.session_state.quiz_index = 0
+                    st.session_state.quiz_score = 0
+                    st.session_state.quiz_answered = False
+                    st.session_state.quiz_finished = False
+
+                    st.success(f"✅ 新題目已加入 {quiz_type} 題庫！目前共 {len(QUESTIONS[quiz_type])} 題，請重新開始練習！")
+                    st.rerun()
+                else:
+                    st.error("AI 出題失敗，請再試一次！")
+
+    st.divider()
+
     # 題目數量選擇
     num_questions = st.slider(
         "選擇題目數量",
@@ -1648,7 +1807,8 @@ if st.session_state.quiz_mode:
 
     # 如果換了題型或題目數量，重置狀態
     if (st.session_state.last_quiz_type != quiz_type or
-        "quiz_questions" not in st.session_state):
+        "quiz_questions" not in st.session_state or
+        st.session_state.quiz_questions is None):
         random.shuffle(QUESTIONS[quiz_type])
         st.session_state.quiz_questions = QUESTIONS[quiz_type][:num_questions]
         st.session_state.quiz_index = 0
