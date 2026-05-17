@@ -983,6 +983,67 @@ if st.sidebar.button("❌ 複習錯題"):
     st.rerun()
 
 st.sidebar.divider()
+st.sidebar.subheader("📖 TOEIC 必考單字")
+
+VOCAB_LIST = [
+    {"word": "accommodate", "meaning": "容納；調節", "example": "The hotel can accommodate 300 guests."},
+    {"word": "adjacent", "meaning": "鄰近的", "example": "The office is adjacent to the station."},
+    {"word": "allocate", "meaning": "分配；撥出", "example": "We need to allocate more budget for marketing."},
+    {"word": "anticipate", "meaning": "預期；預料", "example": "We anticipate strong sales this quarter."},
+    {"word": "assess", "meaning": "評估；評定", "example": "Please assess the risk before proceeding."},
+    {"word": "collaboration", "meaning": "合作；協作", "example": "The project requires close collaboration."},
+    {"word": "comply", "meaning": "遵守；服從", "example": "All staff must comply with safety regulations."},
+    {"word": "comprehensive", "meaning": "全面的；綜合的", "example": "We offer comprehensive insurance coverage."},
+    {"word": "coordinate", "meaning": "協調；統籌", "example": "She will coordinate the event planning."},
+    {"word": "deadline", "meaning": "截止日期", "example": "Please submit the report before the deadline."},
+    {"word": "delegate", "meaning": "授權；委派", "example": "Managers should delegate tasks effectively."},
+    {"word": "demonstrate", "meaning": "展示；證明", "example": "Please demonstrate how to use the software."},
+    {"word": "efficient", "meaning": "有效率的", "example": "We need a more efficient workflow."},
+    {"word": "eliminate", "meaning": "消除；排除", "example": "We must eliminate unnecessary costs."},
+    {"word": "equivalent", "meaning": "相等的；同等的", "example": "This degree is equivalent to a master's."},
+]
+
+if "vocab_index" not in st.session_state:
+    st.session_state.vocab_index = 0
+
+vocab = VOCAB_LIST[st.session_state.vocab_index]
+
+st.sidebar.markdown(f"""
+<div style="
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin: 5px 0;
+">
+    <p style="color: white !important; font-size: 1.1rem; font-weight: 800; margin: 0;">
+        {vocab['word']}
+    </p>
+    <p style="color: rgba(255,255,255,0.8) !important; font-size: 0.85rem; margin: 3px 0;">
+        {vocab['meaning']}
+    </p>
+    <p style="color: rgba(255,255,255,0.6) !important; font-size: 0.8rem; margin: 0; font-style: italic;">
+        {vocab['example']}
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+col_prev, col_next = st.sidebar.columns(2)
+with col_prev:
+    if st.button("◀ 上一個", key="vocab_prev"):
+        st.session_state.vocab_index = (st.session_state.vocab_index - 1) % len(VOCAB_LIST)
+        st.rerun()
+with col_next:
+    if st.button("下一個 ▶", key="vocab_next"):
+        st.session_state.vocab_index = (st.session_state.vocab_index + 1) % len(VOCAB_LIST)
+        st.rerun()
+
+st.sidebar.markdown(f"""
+<p style="color: rgba(255,255,255,0.5) !important; font-size: 0.75rem; text-align: center; margin: 2px 0;">
+    {st.session_state.vocab_index + 1} / {len(VOCAB_LIST)} 個單字
+</p>
+""", unsafe_allow_html=True)
+
+st.sidebar.divider()
 
 st.sidebar.subheader("📄 學習報告")
 
@@ -1064,9 +1125,8 @@ if username:
 # 模式選擇
 analysis_ready = False
 mode = st.radio(
-
     "選擇輸入方式",
-    ["手動輸入", "CSV 上傳"]
+    ["做題目測驗", "CSV 上傳"]
 )
 
 # 歡迎頁面
@@ -1128,33 +1188,233 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 手動輸入
-if mode == "手動輸入":
+# 做題目測驗模式
+if mode == "做題目測驗":
 
     st.markdown(f"""
     <div style="
         background: {card_bg};
         border-radius: 20px;
-        padding: 30px;
+        padding: 25px 30px;
         box-shadow: {card_shadow};
         margin-bottom: 20px;
+        border-left: 5px solid #667eea;
     ">
-        <h3 style="color: #667eea !important; font-weight: 700; margin-bottom: 5px;">📝 請輸入英文能力</h3>
-        <p style="color: {text_color} !important; font-size: 0.9rem;">請根據您的實際程度調整以下滑桿</p>
+        <h3 style="color: #667eea !important; font-weight: 700; margin-bottom: 5px;">
+            📝 能力測驗
+        </h3>
+        <p style="color: {text_color} !important; font-size: 0.9rem; margin: 0;">
+            每種題型各 5 題，做完後自動分析您的英文能力！
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
-    reading_score = st.slider("Reading（閱讀）", 0, 100, 50) / 100
-    vocabulary_score = st.slider("Vocabulary（詞彙）", 0, 100, 50) / 100
-    grammar_score = st.slider("Grammar（語法)", 0, 100, 50) / 100
+    # 初始化測驗狀態
+    if "test_mode" not in st.session_state:
+        st.session_state.test_mode = "select"
+    if "test_type" not in st.session_state:
+        st.session_state.test_type = None
+    if "test_results" not in st.session_state:
+        st.session_state.test_results = {}
+    if "test_questions" not in st.session_state:
+        st.session_state.test_questions = {}
+    if "test_index" not in st.session_state:
+        st.session_state.test_index = 0
+    if "test_score" not in st.session_state:
+        st.session_state.test_score = 0
+    if "test_answered" not in st.session_state:
+        st.session_state.test_answered = False
 
-    accuracy = pd.Series({
-        "Reading": reading_score,
-        "Vocabulary": vocabulary_score,
-        "Grammar": grammar_score
-    })
+    if st.session_state.test_mode == "select":
 
-    analysis_ready = True
+        st.subheader("選擇測驗題型")
+
+        completed = st.session_state.test_results
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            reading_done = "Reading" in completed
+            st.markdown(f"""
+            <div style="
+                background: {'#e8f5e9' if reading_done else card_bg};
+                border-radius: 15px;
+                padding: 20px;
+                text-align: center;
+                box-shadow: {card_shadow};
+                border: 2px solid {'#51cf66' if reading_done else '#667eea'};
+            ">
+                <p style="font-size: 2rem; margin: 0;">📖</p>
+                <p style="color: {'#51cf66' if reading_done else '#667eea'} !important; font-weight: 700; margin: 5px 0;">Reading</p>
+                <p style="color: {text_color} !important; font-size: 0.85rem; margin: 0;">
+                    {'✅ ' + str(int(completed['Reading']*100)) + '%' if reading_done else '尚未測驗'}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            if not reading_done:
+                if st.button("開始 Reading 測驗", key="start_reading"):
+                    st.session_state.test_type = "Reading"
+                    st.session_state.test_mode = "testing"
+                    random.shuffle(QUESTIONS["Reading"])
+                    st.session_state.test_questions = QUESTIONS["Reading"][:5]
+                    st.session_state.test_index = 0
+                    st.session_state.test_score = 0
+                    st.session_state.test_answered = False
+                    st.rerun()
+
+        with col2:
+            vocab_done = "Vocabulary" in completed
+            st.markdown(f"""
+            <div style="
+                background: {'#e8f5e9' if vocab_done else card_bg};
+                border-radius: 15px;
+                padding: 20px;
+                text-align: center;
+                box-shadow: {card_shadow};
+                border: 2px solid {'#51cf66' if vocab_done else '#764ba2'};
+            ">
+                <p style="font-size: 2rem; margin: 0;">📚</p>
+                <p style="color: {'#51cf66' if vocab_done else '#764ba2'} !important; font-weight: 700; margin: 5px 0;">Vocabulary</p>
+                <p style="color: {text_color} !important; font-size: 0.85rem; margin: 0;">
+                    {'✅ ' + str(int(completed['Vocabulary']*100)) + '%' if vocab_done else '尚未測驗'}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            if not vocab_done:
+                if st.button("開始 Vocabulary 測驗", key="start_vocab"):
+                    st.session_state.test_type = "Vocabulary"
+                    st.session_state.test_mode = "testing"
+                    random.shuffle(QUESTIONS["Vocabulary"])
+                    st.session_state.test_questions = QUESTIONS["Vocabulary"][:5]
+                    st.session_state.test_index = 0
+                    st.session_state.test_score = 0
+                    st.session_state.test_answered = False
+                    st.rerun()
+
+        with col3:
+            grammar_done = "Grammar" in completed
+            st.markdown(f"""
+            <div style="
+                background: {'#e8f5e9' if grammar_done else card_bg};
+                border-radius: 15px;
+                padding: 20px;
+                text-align: center;
+                box-shadow: {card_shadow};
+                border: 2px solid {'#51cf66' if grammar_done else '#f093fb'};
+            ">
+                <p style="font-size: 2rem; margin: 0;">✏️</p>
+                <p style="color: {'#51cf66' if grammar_done else '#f093fb'} !important; font-weight: 700; margin: 5px 0;">Grammar</p>
+                <p style="color: {text_color} !important; font-size: 0.85rem; margin: 0;">
+                    {'✅ ' + str(int(completed['Grammar']*100)) + '%' if grammar_done else '尚未測驗'}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            if not grammar_done:
+                if st.button("開始 Grammar 測驗", key="start_grammar"):
+                    st.session_state.test_type = "Grammar"
+                    st.session_state.test_mode = "testing"
+                    random.shuffle(QUESTIONS["Grammar"])
+                    st.session_state.test_questions = QUESTIONS["Grammar"][:5]
+                    st.session_state.test_index = 0
+                    st.session_state.test_score = 0
+                    st.session_state.test_answered = False
+                    st.rerun()
+
+        # 如果三種都測驗完畢，顯示分析按鈕
+        if len(completed) == 3:
+            st.divider()
+            st.success("🎉 三種題型測驗完成！點擊下方按鈕查看完整分析！")
+
+            reading_score = completed["Reading"]
+            vocabulary_score = completed["Vocabulary"]
+            grammar_score = completed["Grammar"]
+
+            accuracy = pd.Series({
+                "Reading": reading_score,
+                "Vocabulary": vocabulary_score,
+                "Grammar": grammar_score
+            })
+            analysis_ready = True
+
+            if st.button("🔄 重新測驗", key="reset_test"):
+                st.session_state.test_results = {}
+                st.session_state.test_mode = "select"
+                st.rerun()
+
+    elif st.session_state.test_mode == "testing":
+
+        quiz_type = st.session_state.test_type
+        questions = st.session_state.test_questions
+        total = len(questions)
+        idx = st.session_state.test_index
+
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 15px;
+            padding: 12px 20px;
+            margin-bottom: 15px;
+        ">
+            <p style="color: white !important; font-weight: 700; margin: 0; font-size: 1rem;">
+                {quiz_type} 測驗 — 第 {idx+1} 題 / 共 {total} 題
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.progress(idx / total)
+
+        current_q = questions[idx]
+
+        st.markdown(f"""
+        <div style="
+            background: {card_bg};
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: {card_shadow};
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        ">
+            <p style="color: {text_color} !important; font-size: 1rem; white-space: pre-line;">
+                {current_q["question"]}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        selected = st.radio(
+            "請選擇答案",
+            current_q["options"],
+            key=f"test_q_{idx}",
+            label_visibility="collapsed"
+        )
+
+        if not st.session_state.test_answered:
+            if st.button("確認答案 ✓", key="test_confirm"):
+                st.session_state.test_answered = True
+                if selected[0] == current_q["answer"]:
+                    st.session_state.test_score += 1
+                    st.success("✅ 答對了！")
+                else:
+                    st.error(f"❌ 答錯了！正確答案是 {current_q['answer']}")
+                st.info(f"📖 解析：{current_q['explanation']}")
+        else:
+            if selected[0] == current_q["answer"]:
+                st.success("✅ 答對了！")
+            else:
+                st.error(f"❌ 答錯了！正確答案是 {current_q['answer']}")
+            st.info(f"📖 解析：{current_q['explanation']}")
+
+            if idx + 1 < total:
+                if st.button("下一題 →", key="test_next"):
+                    st.session_state.test_index += 1
+                    st.session_state.test_answered = False
+                    st.rerun()
+            else:
+                if st.button("完成測驗 🎯", key="test_finish"):
+                    score = st.session_state.test_score
+                    accuracy_rate = score / total
+                    st.session_state.test_results[quiz_type] = accuracy_rate
+                    st.session_state.test_mode = "select"
+                    st.rerun()
 
 # CSV 上傳
 if mode == "CSV 上傳":
